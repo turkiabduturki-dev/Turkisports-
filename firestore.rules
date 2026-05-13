@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // Validation Blueprints
+    function isValidTeam(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && (data.get('shortName', '') is string && data.get('shortName', '').size() <= 10)
+        && (data.get('logoUrl', '') is string && data.get('logoUrl', '').size() <= 1000)
+        && (data.get('country', '') is string)
+        && (data.get('stadium', '') is string);
+    }
+
+    function isValidCompetition(data) {
+      return data.name is string && data.name.size() > 0
+        && (data.type in ['league', 'cup', 'tournament']);
+    }
+
+    function isValidMatch(data) {
+      return isValidId(data.homeTeamId) && isValidId(data.awayTeamId)
+        && data.status in ['UPCOMING', 'LIVE', 'FINISHED', 'CANCELLED']
+        && (data.get('homeScore', 0) is int && data.homeScore >= 0 && data.homeScore < 100)
+        && (data.get('awayScore', 0) is int && data.awayScore >= 0 && data.awayScore < 100);
+    }
+
+    // Collection Rules
+    
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /teams/{teamId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidTeam(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /competitions/{compId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidCompetition(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /matches/{matchId} {
+      allow read, list: if true;
+      allow create: if isAdmin() && isValidMatch(incoming());
+      allow update: if isAdmin() && isValidMatch(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasAny(['homeScore', 'awayScore', 'status', 'minute', 'updatedAt'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /players/{playerId} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}

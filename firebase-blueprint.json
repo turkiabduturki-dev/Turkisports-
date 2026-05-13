@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "team": {
+      "title": "Team",
+      "description": "A football club or national team.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The full name of the team." },
+        "shortName": { "type": "string", "description": "Abbreviated name." },
+        "logoUrl": { "type": "string", "description": "Public URL to team logo." },
+        "country": { "type": "string" },
+        "stadium": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "competition": {
+      "title": "Competition",
+      "description": "A football league or tournament.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["league", "cup", "tournament"] },
+        "country": { "type": "string" },
+        "logoUrl": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "match": {
+      "title": "Match",
+      "description": "A football match between two teams.",
+      "type": "object",
+      "properties": {
+        "homeTeamId": { "type": "string" },
+        "awayTeamId": { "type": "string" },
+        "homeScore": { "type": "integer" },
+        "awayScore": { "type": "integer" },
+        "status": { "type": "string", "enum": ["UPCOMING", "LIVE", "FINISHED", "CANCELLED"] },
+        "time": { "type": "string", "format": "date-time" },
+        "competitionId": { "type": "string" },
+        "minute": { "type": "integer" }
+      },
+      "required": ["homeTeamId", "awayTeamId", "status", "time"]
+    },
+    "player": {
+      "title": "Player",
+      "description": "A professional football player.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "teamId": { "type": "string" },
+        "position": { "type": "string" },
+        "nationality": { "type": "string" },
+        "age": { "type": "integer" },
+        "goals": { "type": "integer" },
+        "assists": { "type": "integer" }
+      },
+      "required": ["name", "teamId"]
+    }
+  },
+  "firestore": {
+    "teams": { "schema": "team", "description": "Collection of football teams." },
+    "competitions": { "schema": "competition", "description": "Leagues and tournaments." },
+    "matches": { "schema": "match", "description": "All matches across competitions." },
+    "players": { "schema": "player", "description": "Player database." }
+  }
+}
